@@ -69,9 +69,8 @@ def clean_str(string):
 import os
 import subprocess
 # Choose the project (options: 'pytorch', 'tensorflow', 'keras', 'incubator-mxnet', 'caffe')
-project = 'pytorch'
-base_dir = os.path.dirname(os.path.abspath(__file__))
-path = os.path.join(base_dir, 'datasets', f'{project}.csv')
+project = 'caffe'
+path = f'bug_report_classifier/data/{project}.csv'
 
 pd_all = pd.read_csv(path)
 pd_all = pd_all.sample(frac=1, random_state=999)  # Shuffle
@@ -101,7 +100,7 @@ datafile = 'Title+Body.csv'
 REPEAT = 10
 
 # 3) Output CSV file name
-out_csv_name = f'../{project}_NB.csv'
+out_csv_name = f'bug_report_classifier/results/{project}_NB.csv'
 
 # ========== Read and clean data ==========
 data = pd.read_csv(datafile).fillna('')
