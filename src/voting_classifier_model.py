@@ -9,7 +9,9 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import (accuracy_score, precision_score, recall_score,
                              f1_score, roc_curve, auc)
 
+from sklearn.ensemble import VotingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
 
 import nltk
 nltk.download('stopwords')
@@ -74,7 +76,7 @@ datafile = 'Title+Body.csv'
 
 REPEAT = 10
 
-out_csv_name = f'bug_report_classifier/results/{project}_LR.csv'
+out_csv_name = f'bug_report_classifier/results/{project}_VC.csv'
 
 data = pd.read_csv(datafile).fillna('')
 text_col = 'text'
@@ -87,7 +89,8 @@ data[text_col] = data[text_col].apply(remove_stopwords)
 data[text_col] = data[text_col].apply(clean_str)
 
 params = {
-    'C': [0.01, 0.1, 1, 10]
+    'lr__C': [0.1, 1, 10],
+    'rf__n_estimators': [50, 100]
 }
 
 accuracies  = []
@@ -109,25 +112,25 @@ for repeated_time in range(REPEAT):
     y_test  = data['sentiment'].iloc[test_index]
 
     tfidf = TfidfVectorizer(
-        ngram_range=(1, 3),
-        max_features=2000
+        ngram_range=(1, 2),
+        max_features=1000
     )
     X_train = tfidf.fit_transform(train_text)
     X_test = tfidf.transform(test_text)
 
-    clf = LogisticRegression(max_iter=1000, class_weight='balanced')
-    grid = GridSearchCV(
-        clf,
-        params,
-        cv=5,
-        scoring='roc_auc'
+    lr = LogisticRegression(max_iter=1000, class_weight='balanced')
+    svm = LinearSVC()
+    rf = RandomForestClassifier(n_estimators=100, class_weight='balanced')
+    classifier = VotingClassifier(
+        estimators=[
+            ('lr', lr),
+            ('svm', svm),
+            ('rf', rf),
+        ],
+        voting='hard'
     )
-    grid.fit(X_train, y_train)
-
-    best_clf = grid.best_estimator_
-    best_clf.fit(X_train, y_train)
-
-    y_pred = best_clf.predict(X_test)
+    classifier.fit(X_train, y_train)
+    y_pred = classifier.predict(X_test)
 
     acc = accuracy_score(y_test, y_pred)
     accuracies.append(acc)
@@ -151,7 +154,7 @@ final_recall    = np.mean(recalls)
 final_f1        = np.mean(f1_scores)
 final_auc       = np.mean(auc_values)
 
-print("=== Logistic Regression + TF-IDF Results ===")
+print("=== Voting Classifier + TF-IDF Results ===")
 print(f"Number of repeats:     {REPEAT}")
 print(f"Average Accuracy:      {final_accuracy:.4f}")
 print(f"Average Precision:     {final_precision:.4f}")
