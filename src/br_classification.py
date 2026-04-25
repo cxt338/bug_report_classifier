@@ -52,7 +52,7 @@ def clean_str(string):
 import os
 import subprocess
 # Choose the project (options: 'pytorch', 'tensorflow', 'keras', 'incubator-mxnet', 'caffe')
-project = 'caffe'
+project = 'keras'
 path = f'bug_report_classifier/data/{project}.csv'
 
 pd_all = pd.read_csv(path)
@@ -120,7 +120,7 @@ for repeated_time in range(REPEAT):
         clf,
         params,
         cv=5,
-        scoring='roc_auc'
+        scoring='f1_macro'
     )
     grid.fit(X_train, y_train)
 

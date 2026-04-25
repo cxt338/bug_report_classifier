@@ -53,7 +53,7 @@ def clean_str(string):
 import os
 import subprocess
 # Choose the project (options: 'pytorch', 'tensorflow', 'keras', 'incubator-mxnet', 'caffe')
-project = 'pytorch'
+project = 'keras'
 path = f'bug_report_classifier/data/{project}.csv'
 
 pd_all = pd.read_csv(path)
@@ -110,12 +110,12 @@ for repeated_time in range(REPEAT):
     y_train = data['sentiment'].iloc[train_index]
     y_test  = data['sentiment'].iloc[test_index]
 
-    tfidf = TfidfVectorizer(
+    nb_tfidf = TfidfVectorizer(
         ngram_range=(1, 2),
         max_features=1000
     )
-    X_train = tfidf.fit_transform(train_text)
-    X_test = tfidf.transform(test_text)
+    nb_X_train = nb_tfidf.fit_transform(train_text)
+    nb_X_test = nb_tfidf.transform(test_text)
 
     nb_clf = GaussianNB()
     nb_grid = GridSearchCV(
@@ -124,15 +124,22 @@ for repeated_time in range(REPEAT):
         cv=5,
         scoring='f1_macro'
     )
-    nb_grid.fit(X_train.toarray(), y_train)
+    nb_grid.fit(nb_X_train.toarray(), y_train)
 
     nb_best_clf = nb_grid.best_estimator_
-    nb_best_clf.fit(X_train.toarray(), y_train)
+    nb_best_clf.fit(nb_X_train.toarray(), y_train)
 
-    nb_y_pred = nb_best_clf.predict(X_test.toarray())
+    nb_y_pred = nb_best_clf.predict(nb_X_test.toarray())
 
     f1 = f1_score(y_test, nb_y_pred, average='macro')
     nb_f1_scores.append(f1)
+
+    lr_tfidf = TfidfVectorizer(
+        ngram_range=(1, 3),
+        max_features=2000
+    )
+    lr_X_train = lr_tfidf.fit_transform(train_text)
+    lr_X_test = lr_tfidf.transform(test_text)
 
     lr_clf = LogisticRegression(max_iter=1000, class_weight='balanced')
     lr_grid = GridSearchCV(
@@ -141,12 +148,12 @@ for repeated_time in range(REPEAT):
         cv=5,
         scoring='f1_macro'
     )
-    lr_grid.fit(X_train, y_train)
+    lr_grid.fit(lr_X_train, y_train)
 
     lr_best_clf = lr_grid.best_estimator_
-    lr_best_clf.fit(X_train, y_train)
+    lr_best_clf.fit(lr_X_train, y_train)
 
-    lr_y_pred = lr_best_clf.predict(X_test)
+    lr_y_pred = lr_best_clf.predict(lr_X_test)
 
     f1 = f1_score(y_test, lr_y_pred, average='macro')
     lr_f1_scores.append(f1)
@@ -156,7 +163,7 @@ t_stat, p_value = ttest_rel(nb_f1_scores, lr_f1_scores)
 
 print("=== T-Test Results ===")
 print(f"T-statistic: {t_stat:.4f}")
-print(f"P-value: {p_value:.6f}")
+print(f"P-value: {p_value:.10f}")
 print(f"NB Mean F1: {np.mean(nb_f1_scores):.4f}")
 print(f"LR Mean F1: {np.mean(lr_f1_scores):.4f}")
 diff = np.mean(lr_f1_scores) - np.mean(nb_f1_scores)

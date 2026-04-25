@@ -54,7 +54,7 @@ def clean_str(string):
 import os
 import subprocess
 # Choose the project (options: 'pytorch', 'tensorflow', 'keras', 'incubator-mxnet', 'caffe')
-project = 'caffe'
+project = 'keras'
 path = f'bug_report_classifier/data/{project}.csv'
 
 pd_all = pd.read_csv(path)
@@ -88,11 +88,6 @@ data[text_col] = data[text_col].apply(remove_emoji)
 data[text_col] = data[text_col].apply(remove_stopwords)
 data[text_col] = data[text_col].apply(clean_str)
 
-params = {
-    'lr__C': [0.1, 1, 10],
-    'rf__n_estimators': [50, 100]
-}
-
 accuracies  = []
 precisions  = []
 recalls     = []
@@ -112,8 +107,8 @@ for repeated_time in range(REPEAT):
     y_test  = data['sentiment'].iloc[test_index]
 
     tfidf = TfidfVectorizer(
-        ngram_range=(1, 2),
-        max_features=1000
+        ngram_range=(1, 3),
+        max_features=2000
     )
     X_train = tfidf.fit_transform(train_text)
     X_test = tfidf.transform(test_text)
